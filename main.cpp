@@ -24,7 +24,6 @@ int main(int argc, char *argv[])
 {
     if (argc != 2)
     {
-        cout << "hi" << endl;
         cout << argv[0] << endl;
         cout << "Incorrect number of arguments" << endl;
         cout << "Format: ./main [input file name]" << endl;
