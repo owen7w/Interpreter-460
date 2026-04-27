@@ -10,6 +10,7 @@ namespace fs = std::filesystem;
 #include "Tokenization.h"
 #include "Parser.h"
 #include "SymbolTable.h"
+#include "AST.h"
 
 int main(int argc, const char** argv) {
     if (argc != 2) {
@@ -62,16 +63,19 @@ int main(int argc, const char** argv) {
         return 1;
     }
 
-    SymbolTableResult sr = createSymbolTable(tree);
+    AST ast;
+    Node* astRoot = ast.build(tree);
 
-    if (sr.error) {
-        out << sr.errorMessage << "\n";
-        freeSymbolTable(sr.head);
+    if (ast.hasError() || astRoot == nullptr) {
+        if (!ast.getErrorMessage().empty()) {
+            out << ast.getErrorMessage() << "\n";
+        } else {
+            out << "ERROR: Failed to build AST\n";
+        }
         return 1;
     }
 
-    printSymbolTable(sr.head, out);
-    freeSymbolTable(sr.head);
+    ast.printTree(out);
 
     return 0;
 }
