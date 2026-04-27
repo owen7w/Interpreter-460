@@ -61,7 +61,6 @@ public:
     int getErrorLine() const;
 
     Node* getTree() const;
-    void printBreadthFirst(ostream& out) const;
 };
 
 #endif
