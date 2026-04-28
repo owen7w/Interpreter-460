@@ -120,6 +120,10 @@ bool isSemicolon(Node* n) {
     return n != nullptr && n->text == ";";
 }
 
+bool isElseStart(Node* n) {
+    return n != nullptr && n->label == "IDENTIFIER" && n->text == "else";
+}
+
 AST::~AST() {
     destroyTree(abstractSyntaxTree);
 }
@@ -283,38 +287,60 @@ void AST::shuntingYard(const vector<Node*>& list) {
 
     for (size_t i = 0; i < list.size(); i++) {
         Node* curr = list[i];
-        // if string literal, treat whole thing like one operand group
-        if (curr->text == "\"") {
+        
+        if (curr->text == "\"") { // string literal
+            int literalLine = curr->line;
             output.push_back(curr);
             i++;
+            string literal = "";
 
-            while (i < list.size()) {
-                output.push_back(list[i]);
-                if (list[i]->text == "\"") {
-                    break;
-                }
+            while (i < list.size() && list[i]->text != "\"") {
+                literal += list[i]->text;
                 i++;
             }
+            Node* literalNode = createAstNode("STRING", literal, literalLine);
+            output.push_back(literalNode);
+            output.push_back(list[i]);
         }
+        else if (curr->label == "IDENTIFIER" && (i + 1 < list.size()) && (list[i + 1]->text == "(")) { // function call - add function name and entire parenthesis group as one unit
+                
+                output.push_back(curr);
+                i++;
+                output.push_back(list[i]);
+                int parenDepth = 1;
+                i++;
+                while (i < list.size() && parenDepth > 0) {
+                    output.push_back(list[i]);
+
+                    if (list[i]->text == "(") {
+                        parenDepth++;
+                    }
+                    else if (list[i]->text == ")") {
+                        parenDepth--;
+                    }
+
+                    i++;
+                }
+                i--;
+            }
 
         // if single-quoted literal, treat whole thing like one operand group
         else if (curr->text == "'") {
-            output.push_back(curr);
+            int literalLine = curr->line;
+            output.push_back(curr); 
             i++;
 
-            while (i < list.size()) {
-                output.push_back(list[i]);
-                if (list[i]->text == "'") {
-                    break;
-                }
+            string literal = "";
+
+            while (i < list.size() && list[i]->text != "'") {
+                literal += list[i]->text;
                 i++;
             }
+
+            Node* literalNode = createAstNode("ESCAPED_CHARACTER", literal, literalLine);
+            output.push_back(literalNode);
+            output.push_back(list[i]);
         }
-
-
-
-
-
         // if operand, append to output
         
         else if (curr->label == "IDENTIFIER" ||
@@ -409,6 +435,11 @@ Node* AST::build(Node* cstRoot) {
                 current = nextCstNode(current);
                 state = 400;
             }
+            else if (isElseStart(current)) {
+                addElementToAbstractSyntaxTree("ELSE", "", current->line);
+                current = nextCstNode(current);
+                state = 400; 
+            }
             else if (isWhileStart(current)) {
                 addElementToAbstractSyntaxTree("WHILE", "", current->line);
                 current = nextCstNode(current);
@@ -497,7 +528,7 @@ Node* AST::build(Node* cstRoot) {
             }
             current = nextCstNode(current);
         }
-        else if (state == 400) { // inside if
+        else if (state == 400) { // inside if/else
             if (isLeftBrace(current)) {
                 state = 0;
                 shuntingYard(infixTokens);

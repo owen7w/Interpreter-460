@@ -13,6 +13,6 @@ BEGIN BLOCK
 DECLARATION	
 DECLARATION	
 ASSIGNMENT	n	100	=	
-ASSIGNMENT	sum	sum_of_first_n_squares	n	=	
+ASSIGNMENT	sum	sum_of_first_n_squares	(	n	)	=	
 PRINTF	sum of the squares of the first %d numbers = %d	\n	n	sum	
 END BLOCK	
