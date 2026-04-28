@@ -1,9 +1,8 @@
 #include "AST.h"
 #include <vector>
-#include <stack> 
+#include <stack>
 
 using namespace std;
-
 
 AST::AST()
     : concreteSyntaxTree(nullptr),
@@ -12,12 +11,12 @@ AST::AST()
       buildError(false),
       buildErrorMessage(""),
       buildErrorLine(0),
-      nextLinkIsChild(false) {
+      nextLinkIsChild(false)
+{
 }
 
-
-
-bool isReservedWord(const string& word) {
+bool isReservedWord(const string &word)
+{
     return word == "function" ||
            word == "procedure" ||
            word == "if" ||
@@ -36,9 +35,12 @@ bool isReservedWord(const string& word) {
            word == "FALSE";
 }
 
-bool isDeclarationStart(Node* n) {
-    if (n == nullptr) return false;
-    if (n->label != "IDENTIFIER") return false;
+bool isDeclarationStart(Node *n)
+{
+    if (n == nullptr)
+        return false;
+    if (n->label != "IDENTIFIER")
+        return false;
 
     return n->text == "int" ||
            n->text == "char" ||
@@ -48,38 +50,53 @@ bool isDeclarationStart(Node* n) {
            n->text == "double";
 }
 
-bool isFunctionOrProcedureStart(Node* n) {
-    if (n == nullptr) return false;
-    if (n->label != "IDENTIFIER") return false;
+bool isFunctionOrProcedureStart(Node *n)
+{
+    if (n == nullptr)
+        return false;
+    if (n->label != "IDENTIFIER")
+        return false;
 
     return n->text == "function" || n->text == "procedure";
 }
 
-bool isCallStart(Node* n) {
-    if (n == nullptr) return false;
-    if (n->label != "IDENTIFIER") return false;
-    if (isReservedWord(n->text)) return false;
-    if (n->sibling == nullptr) return false;
+bool isCallStart(Node *n)
+{
+    if (n == nullptr)
+        return false;
+    if (n->label != "IDENTIFIER")
+        return false;
+    if (isReservedWord(n->text))
+        return false;
+    if (n->sibling == nullptr)
+        return false;
 
     return n->sibling->text == "(";
 }
 
+bool isAssignmentStart(Node *n)
+{
+    if (n == nullptr)
+        return false;
+    if (n->label != "IDENTIFIER")
+        return false;
+    if (isReservedWord(n->text))
+        return false;
 
-bool isAssignmentStart(Node* n) {
-    if (n == nullptr) return false;
-    if (n->label != "IDENTIFIER") return false;
-    if (isReservedWord(n->text)) return false;
+    Node *cur = n->sibling;
 
-    Node* cur = n->sibling;
-
-    while (cur != nullptr) {
-        if (cur->text == ";") {
+    while (cur != nullptr)
+    {
+        if (cur->text == ";")
+        {
             return false;
         }
-        if (cur->text == "=") {
+        if (cur->text == "=")
+        {
             return true;
         }
-        if (cur->text == "(") {
+        if (cur->text == "(")
+        {
             return false;
         }
         cur = cur->sibling;
@@ -88,66 +105,80 @@ bool isAssignmentStart(Node* n) {
     return false;
 }
 
-bool isPrintfStart(Node* n) {
+bool isPrintfStart(Node *n)
+{
     return n != nullptr && n->label == "IDENTIFIER" && n->text == "printf";
 }
 
-bool isReturnStart(Node* n) {
+bool isReturnStart(Node *n)
+{
     return n != nullptr && n->label == "IDENTIFIER" && n->text == "return";
 }
 
-bool isIfStart(Node* n) {
+bool isIfStart(Node *n)
+{
     return n != nullptr && n->label == "IDENTIFIER" && n->text == "if";
 }
 
-bool isWhileStart(Node* n) {
-    return n != nullptr && n->label == "IDENTIFIER" && n->text == "while";
-}
-
-bool isForStart(Node* n) {
-    return n != nullptr && n->label == "IDENTIFIER" && n->text == "for";
-}
-
-bool isLeftBrace(Node* n) {
-    return n != nullptr && n->text == "{";
-}
-
-bool isRightBrace(Node* n) {
-    return n != nullptr && n->text == "}";
-}
-
-bool isSemicolon(Node* n) {
-    return n != nullptr && n->text == ";";
-}
-
-bool isElseStart(Node* n) {
+bool isElse(Node *n)
+{
     return n != nullptr && n->label == "IDENTIFIER" && n->text == "else";
 }
 
-AST::~AST() {
+bool isWhileStart(Node *n)
+{
+    return n != nullptr && n->label == "IDENTIFIER" && n->text == "while";
+}
+
+bool isForStart(Node *n)
+{
+    return n != nullptr && n->label == "IDENTIFIER" && n->text == "for";
+}
+
+bool isLeftBrace(Node *n)
+{
+    return n != nullptr && n->text == "{";
+}
+
+bool isRightBrace(Node *n)
+{
+    return n != nullptr && n->text == "}";
+}
+
+bool isSemicolon(Node *n)
+{
+    return n != nullptr && n->text == ";";
+}
+
+AST::~AST()
+{
     destroyTree(abstractSyntaxTree);
 }
 
-
-Node* AST::getTree() const {
+Node *AST::getTree() const
+{
     return abstractSyntaxTree;
 }
 
-bool AST::hasError() const {
+bool AST::hasError() const
+{
     return buildError;
 }
 
-string AST::getErrorMessage() const {
+string AST::getErrorMessage() const
+{
     return buildErrorMessage;
 }
 
-int AST::getErrorLine() const {
+int AST::getErrorLine() const
+{
     return buildErrorLine;
 }
 
-
-void AST::printTree(ostream& out) const {
-    if (abstractSyntaxTree == nullptr) {
+void AST::printTree(ostream &out) const
+{
+    if (abstractSyntaxTree == nullptr)
+    {
         out << "(empty tree)";
         return;
     }
@@ -155,19 +186,23 @@ void AST::printTree(ostream& out) const {
     printTreeLines(abstractSyntaxTree, out);
 }
 
-void AST::printTreeLines(const Node* start, ostream& out) const {
-    if (start == nullptr) {
+void AST::printTreeLines(const Node *start, ostream &out) const
+{
+    if (start == nullptr)
+    {
         return;
     }
 
-    const Node* cur = start;
-    const Node* nextLine = nullptr;
+    const Node *cur = start;
+    const Node *nextLine = nullptr;
 
-    while (cur != nullptr) {
+    while (cur != nullptr)
+    {
         string text = cur->text.empty() ? cur->label : cur->text;
-        out << text << '\t';
+        out << text << "    ";
 
-        if (cur->child != nullptr) {
+        if (cur->child != nullptr)
+        {
             nextLine = cur->child;
         }
 
@@ -178,8 +213,10 @@ void AST::printTreeLines(const Node* start, ostream& out) const {
     printTreeLines(nextLine, out);
 }
 
-void AST::destroyTree(Node* n) {
-    if (n == nullptr) {
+void AST::destroyTree(Node *n)
+{
+    if (n == nullptr)
+    {
         return;
     }
 
@@ -188,38 +225,46 @@ void AST::destroyTree(Node* n) {
     delete n;
 }
 
-Node* AST::createAstNode(const string& label, const string& text, int line) {
+Node *AST::createAstNode(const string &label, const string &text, int line)
+{
     return new Node(label, text, line);
 }
 
-void AST::setNextLinkToSibling() {
+void AST::setNextLinkToSibling()
+{
     nextLinkIsChild = false;
 }
 
-void AST::setNextLinkToChild() {
+void AST::setNextLinkToChild()
+{
     nextLinkIsChild = true;
 }
 
+Node *AST::addElementToAbstractSyntaxTree(const string &label, const string &text, int line)
+{
+    Node *newAstElement = createAstNode(label, text, line);
 
-Node* AST::addElementToAbstractSyntaxTree(const string& label, const string& text, int line) {
-    Node* newAstElement = createAstNode(label, text, line);
-
-    if (newAstElement == nullptr) {
+    if (newAstElement == nullptr)
+    {
         return nullptr;
     }
 
-    if (abstractSyntaxTree == nullptr) {
+    if (abstractSyntaxTree == nullptr)
+    {
         abstractSyntaxTree = newAstElement;
         lastAstElement = newAstElement;
         nextLinkIsChild = false;
         return newAstElement;
     }
 
-    if (nextLinkIsChild) {
+    if (nextLinkIsChild)
+    {
         lastAstElement->child = newAstElement;
         lastAstElement = newAstElement;
         nextLinkIsChild = false;
-    } else {
+    }
+    else
+    {
         lastAstElement->sibling = newAstElement;
         lastAstElement = newAstElement;
     }
@@ -227,36 +272,41 @@ Node* AST::addElementToAbstractSyntaxTree(const string& label, const string& tex
     return newAstElement;
 }
 
-
-Node* nextCstNode(Node* current) {
-    if (current == nullptr) {
+Node *nextCstNode(Node *current)
+{
+    if (current == nullptr)
+    {
         return nullptr;
     }
 
-    if (current->sibling != nullptr) {
+    if (current->sibling != nullptr)
+    {
         return current->sibling;
     }
 
-    if (current->child != nullptr) {
+    if (current->child != nullptr)
+    {
         return current->child;
     }
 
     return nullptr;
 }
 
-bool isOperator(const Node* n) {
-    if (n == nullptr) return false;
+bool isOperator(const Node *n)
+{
+    if (n == nullptr)
+        return false;
 
-    return n->text == "!"  ||
-           n->text == "^"  ||
-           n->text == "*"  ||
-           n->text == "/"  ||
-           n->text == "%"  ||
-           n->text == "+"  ||
-           n->text == "-"  ||
-           n->text == "<"  ||
+    return n->text == "!" ||
+           n->text == "^" ||
+           n->text == "*" ||
+           n->text == "/" ||
+           n->text == "%" ||
+           n->text == "+" ||
+           n->text == "-" ||
+           n->text == "<" ||
            n->text == "<=" ||
-           n->text == ">"  ||
+           n->text == ">" ||
            n->text == ">=" ||
            n->text == "==" ||
            n->text == "!=" ||
@@ -264,22 +314,30 @@ bool isOperator(const Node* n) {
            n->text == "||";
 }
 
-int precedence(const Node* n) {
-    if (n == nullptr) return -1;
+int precedence(const Node *n)
+{
+    if (n == nullptr)
+        return -1;
 
-    if (n->text == "!") return 6;
-    if (n->text == "^") return 5;
-    if (n->text == "*" || n->text == "/" || n->text == "%") return 4;
-    if (n->text == "+" || n->text == "-") return 3;
+    if (n->text == "!")
+        return 6;
+    if (n->text == "^")
+        return 5;
+    if (n->text == "*" || n->text == "/" || n->text == "%")
+        return 4;
+    if (n->text == "+" || n->text == "-")
+        return 3;
     if (n->text == "<" || n->text == "<=" ||
         n->text == ">" || n->text == ">=" ||
-        n->text == "==" || n->text == "!=") return 2;
-    if (n->text == "&&") return 1;
-    if (n->text == "||") return 0;
+        n->text == "==" || n->text == "!=")
+        return 2;
+    if (n->text == "&&")
+        return 1;
+    if (n->text == "||")
+        return 0;
 
     return -1;
 }
-
 
 void AST::shuntingYard(const vector<Node*>& list) {
     stack<Node*> stack;
@@ -392,12 +450,27 @@ void AST::shuntingYard(const vector<Node*>& list) {
     }
 }
 
-Node* AST::build(Node* cstRoot) {
+Node *AST::build(Node *cstRoot)
+{
     concreteSyntaxTree = cstRoot;
     nextLinkIsChild = false;
-    Node* current = concreteSyntaxTree;
-    vector<Node*> infixTokens;
-    int state = 0;
+    Node *current = concreteSyntaxTree;
+    vector<Node *> infixTokens;
+    enum states
+    {
+        START,
+        FUNC_PROC,
+        DECLARATION,
+        PRINT,
+        RETURN,
+        IF,
+        ELSE,
+        WHILE,
+        FOR,
+        CALL,
+        ASSIGNMENT
+    };
+    states state = START;
     destroyTree(abstractSyntaxTree);
     abstractSyntaxTree = nullptr;
     lastAstElement = nullptr;
@@ -406,188 +479,242 @@ Node* AST::build(Node* cstRoot) {
     buildErrorLine = 0;
 
     nextLinkIsChild = false;
-    while (current != nullptr) {
-        if (state == 0) {
-            if(isFunctionOrProcedureStart(current)) {
+    while (current != nullptr)
+    {
+        if (state == START)
+        {
+            if (isFunctionOrProcedureStart(current))
+            {
                 addElementToAbstractSyntaxTree("DECLARATION", "", current->line);
                 setNextLinkToChild();
                 current = nextCstNode(current);
-                state = 50;
+                state = FUNC_PROC;
             }
-            else if (isDeclarationStart(current)) {
+            else if (isDeclarationStart(current))
+            {
                 addElementToAbstractSyntaxTree("DECLARATION", "", current->line);
                 setNextLinkToChild();
                 current = nextCstNode(current);
-                state = 100;
+                state = DECLARATION;
             }
-            else if (isPrintfStart(current)) {
+            else if (isPrintfStart(current))
+            {
                 addElementToAbstractSyntaxTree("PRINTF", "", current->line);
                 current = nextCstNode(current);
-                state = 200;
+                state = PRINT;
             }
-            else if (isReturnStart(current)) {
+            else if (isReturnStart(current))
+            {
                 addElementToAbstractSyntaxTree("RETURN", "", current->line);
                 current = nextCstNode(current);
-                state = 300;
+                state = RETURN;
             }
-            else if (isIfStart(current)) {
+            else if (isIfStart(current))
+            {
                 addElementToAbstractSyntaxTree("IF", "", current->line);
                 current = nextCstNode(current);
-                state = 400;
+                state = IF;
             }
-            else if (isElseStart(current)) {
+            else if (isElse(current))
+            {
                 addElementToAbstractSyntaxTree("ELSE", "", current->line);
                 current = nextCstNode(current);
-                state = 400; 
+                setNextLinkToChild();
+                // stay in START state since else statement is just else followed by block
             }
-            else if (isWhileStart(current)) {
+            else if (isWhileStart(current))
+            {
                 addElementToAbstractSyntaxTree("WHILE", "", current->line);
                 current = nextCstNode(current);
-                state = 500;
+                state = WHILE;
             }
-            else if (isForStart(current)) {
+            else if (isForStart(current))
+            {
                 addElementToAbstractSyntaxTree("FOR", "", current->line);
                 current = nextCstNode(current);
-                state = 600;
+                state = FOR;
             }
-            else if (isCallStart(current)) {
+            else if (isCallStart(current))
+            {
                 addElementToAbstractSyntaxTree("CALL", "", current->line);
-                state = 700;
+                state = CALL;
             }
-            else if (isAssignmentStart(current)) {
+            else if (isAssignmentStart(current))
+            {
                 addElementToAbstractSyntaxTree("ASSIGNMENT", "", current->line);
-                state = 800;
+                state = ASSIGNMENT;
             }
-            else if (isLeftBrace(current)) {
+            else if (isLeftBrace(current))
+            {
                 addElementToAbstractSyntaxTree("BEGIN BLOCK", "", current->line);
                 setNextLinkToChild();
                 current = nextCstNode(current);
             }
-            else if (isRightBrace(current)) {
+            else if (isRightBrace(current))
+            {
                 addElementToAbstractSyntaxTree("END BLOCK", "", current->line);
                 setNextLinkToChild();
                 current = nextCstNode(current);
             }
-            else {
+            else
+            {
                 current = nextCstNode(current);
             }
         }
-        else if (state == 50) { // inside function/procedure
-            if (isLeftBrace(current)) {
-                state = 0;
-            } else {
+        else if (state == FUNC_PROC)
+        { // inside function/procedure
+            if (isLeftBrace(current))
+            {
+                state = START;
+            }
+            else
+            {
                 current = nextCstNode(current);
             }
         }
-        else if (state == 100) { // inside declaration
-            if (isSemicolon(current)) {
-                state = 0;
+        else if (state == DECLARATION)
+        { // inside declaration
+            if (isSemicolon(current))
+            {
+                state = START;
                 current = nextCstNode(current);
             }
-            else if (current->text == ",") { // handle multiple declarations in one line
+            else if (current->text == ",")
+            { // handle multiple declarations in one line
                 addElementToAbstractSyntaxTree("DECLARATION", "", current->line);
                 setNextLinkToChild();
                 current = nextCstNode(current);
             }
-            else if (isLeftBrace(current)) {
-                state = 0;
-            } else {
+            else if (isLeftBrace(current))
+            {
+                state = START;
+            }
+            else
+            {
                 current = nextCstNode(current);
             }
         }
-        else if (state == 200) { // inside printf
-            if (isSemicolon(current)) {
-                state = 0;
+        else if (state == PRINT)
+        { // inside printf
+            if (isSemicolon(current))
+            {
+                state = START;
                 setNextLinkToChild();
                 current = nextCstNode(current);
             }
-            else if (current->text == "(" || current->text == ")" || current->text == ",") {
+            else if (current->text == "(" || current->text == ")" || current->text == ",")
+            {
                 current = nextCstNode(current);
             }
-            else if (current->text == "\"") {
+            else if (current->text == "\"")
+            {
                 current = nextCstNode(current);
-                while (current != nullptr && current->text != "\"") {
+                while (current != nullptr && current->text != "\"")
+                {
                     addElementToAbstractSyntaxTree(current->label, current->text, current->line);
                     current = nextCstNode(current);
                 }
-                if (current != nullptr && current->text == "\"") {
+                if (current != nullptr && current->text == "\"")
+                {
                     current = nextCstNode(current);
                 }
             }
-            else {
+            else
+            {
                 addElementToAbstractSyntaxTree(current->label, current->text, current->line);
                 current = nextCstNode(current);
             }
         }
-        else if (state == 300) { // inside return
-            if (isSemicolon(current)) {
-                state = 0;
+        else if (state == RETURN)
+        { // inside return
+            if (isSemicolon(current))
+            {
+                state = START;
                 setNextLinkToChild();
-            } else {
+            }
+            else
+            {
                 addElementToAbstractSyntaxTree(current->label, current->text, current->line);
             }
             current = nextCstNode(current);
         }
-        else if (state == 400) { // inside if/else
-            if (isLeftBrace(current)) {
-                state = 0;
+        else if (state == IF)
+        { // inside if
+            if (isLeftBrace(current))
+            {
+                state = START;
                 shuntingYard(infixTokens);
                 setNextLinkToChild();
                 infixTokens.clear();
             }
-            else {
+            else
+            {
                 infixTokens.push_back(current);
                 current = nextCstNode(current);
             }
         }
-        else if (state == 500) { // inside while
-            if (isLeftBrace(current)) {
-                state = 0;
+        else if (state == WHILE)
+        { // inside while
+            if (isLeftBrace(current))
+            {
+                state = START;
                 shuntingYard(infixTokens);
                 setNextLinkToChild();
                 infixTokens.clear();
             }
-            else {
+            else
+            {
                 infixTokens.push_back(current);
                 current = nextCstNode(current);
             }
         }
-        else if (state == 600) { // inside for
-            //Will make latter 
+        else if (state == FOR)
+        { // inside for
+            // Will make latter
             current = nextCstNode(current);
-            state = 0;
+            state = START;
         }
-        else if (state == 700) { // inside call
-            if (isSemicolon(current)) {
-                state = 0;
+        else if (state == CALL)
+        { // inside call
+            if (isSemicolon(current))
+            {
+                state = START;
                 setNextLinkToChild();
             }
-            else {
+            else
+            {
                 addElementToAbstractSyntaxTree(current->label, current->text, current->line);
             }
             current = nextCstNode(current);
         }
-        else if (state == 800) { // inside assignment
-            if (isSemicolon(current)) {
-                state = 0;
+        else if (state == ASSIGNMENT)
+        { // inside assignment
+            if (isSemicolon(current))
+            {
+                state = START;
 
-                vector<Node*> leftSide;
-                vector<Node*> rightSide;
+                vector<Node *> leftSide;
+                vector<Node *> rightSide;
                 bool seenEquals = false;
 
-                for (Node* tok : infixTokens) {
-                    if (tok->text == "=") {
+                for (Node *tok : infixTokens)
+                {
+                    if (tok->text == "=")
+                    {
                         seenEquals = true;
                     }
-                    else if (!seenEquals) {
+                    else if (!seenEquals)
+                    {
                         leftSide.push_back(tok);
                     }
-                    else {
+                    else
+                    {
                         rightSide.push_back(tok);
                     }
                 }
 
-                for (Node* tok : leftSide) {
+                for (Node *tok : leftSide)
+                {
                     addElementToAbstractSyntaxTree(tok->label, tok->text, tok->line);
                 }
 
@@ -597,18 +724,17 @@ Node* AST::build(Node* cstRoot) {
                 infixTokens.clear();
                 setNextLinkToChild();
             }
-            else {
+            else
+            {
                 infixTokens.push_back(current);
             }
 
             current = nextCstNode(current);
         }
-        else{
+        else
+        {
             break;
         }
     }
     return abstractSyntaxTree;
 }
-
-
-
