@@ -203,7 +203,7 @@ void AST::printTreeLines(const Node *start, ostream &out) const
     while (cur != nullptr)
     {
         string text = cur->text.empty() ? cur->label : cur->text;
-        out << text << "    ";
+        out << text << "   ";
 
         if (cur->child != nullptr)
         {
@@ -661,13 +661,15 @@ Node *AST::build(Node *cstRoot)
             if (isSemicolon(current))
             {
                 state = START;
+                shuntingYard(infixTokens);
                 setNextLinkToChild();
+                infixTokens.clear();
             }
             else
             {
-                addElementToAbstractSyntaxTree(current->label, current->text, current->line);
+                infixTokens.push_back(current);
+                current = nextCstNode(current);
             }
-            current = nextCstNode(current);
         }
         else if (state == IF)
         { // inside if
