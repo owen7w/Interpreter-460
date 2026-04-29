@@ -144,6 +144,10 @@ bool isRightBrace(Node *n)
 {
     return n != nullptr && n->text == "}";
 }
+bool isRightParen(Node *n)
+{
+    return n != nullptr && n->text == ")";
+}
 
 bool isSemicolon(Node *n)
 {
@@ -199,7 +203,7 @@ void AST::printTreeLines(const Node *start, ostream &out) const
     while (cur != nullptr)
     {
         string text = cur->text.empty() ? cur->label : cur->text;
-        out << text << "    ";
+        out << text << "   ";
 
         if (cur->child != nullptr)
         {
@@ -242,6 +246,8 @@ void AST::setNextLinkToChild()
 
 Node *AST::addElementToAbstractSyntaxTree(const string &label, const string &text, int line)
 {
+    // adds individual element to the ast
+    // handles adding as child or sibling
     Node *newAstElement = createAstNode(label, text, line);
 
     if (newAstElement == nullptr)
@@ -339,95 +345,137 @@ int precedence(const Node *n)
     return -1;
 }
 
-void AST::shuntingYard(const vector<Node*>& list) {
-    stack<Node*> stack;
-    vector<Node*> output;
+void AST::shuntingYard(const vector<Node *> &list)
+{
+    stack<Node *> stack;
+    vector<Node *> output;
 
-    for (size_t i = 0; i < list.size(); i++) {
-        Node* curr = list[i];
-        
-        if (curr->text == "\"") { // string literal
+    for (size_t i = 0; i < list.size(); i++)
+    {
+        Node *curr = list[i];
+
+        if (curr->text == "\"")
+        { // string literal
             int literalLine = curr->line;
             output.push_back(curr);
             i++;
             string literal = "";
 
-            while (i < list.size() && list[i]->text != "\"") {
+            while (i < list.size() && list[i]->text != "\"")
+            {
                 literal += list[i]->text;
                 i++;
             }
-            Node* literalNode = createAstNode("STRING", literal, literalLine);
+            Node *literalNode = createAstNode("STRING", literal, literalLine);
             output.push_back(literalNode);
             output.push_back(list[i]);
         }
-        else if (curr->label == "IDENTIFIER" && (i + 1 < list.size()) && (list[i + 1]->text == "(")) { // function call - add function name and entire parenthesis group as one unit
-                
-                output.push_back(curr);
-                i++;
+        else if (curr->label == "IDENTIFIER" && (i + 1 < list.size()) && (list[i + 1]->text == "("))
+        { // function call - add function name and entire parenthesis group as one unit
+
+            output.push_back(curr);
+            i++;
+            output.push_back(list[i]);
+            int parenDepth = 1;
+            i++;
+            while (i < list.size() && parenDepth > 0)
+            {
                 output.push_back(list[i]);
-                int parenDepth = 1;
-                i++;
-                while (i < list.size() && parenDepth > 0) {
-                    output.push_back(list[i]);
 
-                    if (list[i]->text == "(") {
-                        parenDepth++;
-                    }
-                    else if (list[i]->text == ")") {
-                        parenDepth--;
-                    }
-
-                    i++;
+                if (list[i]->text == "(")
+                {
+                    parenDepth++;
                 }
-                i--;
+                else if (list[i]->text == ")")
+                {
+                    parenDepth--;
+                }
+
+                i++;
             }
+            i--;
+        }
+        else if (curr->label == "IDENTIFIER" && (i + 1 < list.size()) && (list[i + 1]->text == "["))
+        { // array index - add array name and entire index group as one unit
+            // assumes array index is not an expression / keeps it in infix (future change we need to make?)
+            output.push_back(curr);
+            i++;
+            output.push_back(list[i]);
+            int bracketDepth = 1;
+            i++;
+            while (i < list.size() && bracketDepth > 0)
+            {
+                output.push_back(list[i]);
+
+                if (list[i]->text == "[")
+                {
+                    bracketDepth++;
+                }
+                else if (list[i]->text == "]")
+                {
+                    bracketDepth--;
+                }
+
+                i++;
+            }
+            i--;
+        }
 
         // if single-quoted literal, treat whole thing like one operand group
-        else if (curr->text == "'") {
+        else if (curr->text == "'")
+        {
             int literalLine = curr->line;
-            output.push_back(curr); 
+            output.push_back(curr);
             i++;
 
             string literal = "";
 
-            while (i < list.size() && list[i]->text != "'") {
+            while (i < list.size() && list[i]->text != "'")
+            {
                 literal += list[i]->text;
                 i++;
             }
 
-            Node* literalNode = createAstNode("ESCAPED_CHARACTER", literal, literalLine);
+            Node *literalNode = createAstNode("ESCAPED_CHARACTER", literal, literalLine);
             output.push_back(literalNode);
             output.push_back(list[i]);
         }
         // if operand, append to output
-        
+
         else if (curr->label == "IDENTIFIER" ||
-            curr->label == "INTEGER" ||
-            curr->text == "TRUE" ||
-            curr->text == "FALSE") {
+                 curr->label == "INTEGER" ||
+                 curr->text == "TRUE" ||
+                 curr->text == "FALSE")
+        {
             output.push_back(curr);
         }
         // if left parenthesis, stack
-        else if (curr->text == "(") {
+        else if (curr->text == "(")
+        {
             stack.push(curr);
         }
         // if right parenthesis, pop stack until find left parenthesis
-        else if (curr->text == ")") {
-            while (!stack.empty() && stack.top()->text != "(") {
+        else if (curr->text == ")")
+        {
+            while (!stack.empty() && stack.top()->text != "(")
+            {
                 output.push_back(stack.top());
                 stack.pop();
             }
 
-            if (!stack.empty()) {
+            if (!stack.empty())
+            {
                 stack.pop(); // remove (
             }
         }
         // if operator, first remove any higher or equal precedence, then push to stack
-        else if (isOperator(curr)) {
+        else if (isOperator(curr))
+        {
             while (!stack.empty() &&
                    stack.top()->text != "(" &&
                    ((precedence(curr) < precedence(stack.top())) ||
-                    (precedence(curr) == precedence(stack.top()) && curr->text != "^"))) {
+                    (precedence(curr) == precedence(stack.top()) && curr->text != "^")))
+            {
                 output.push_back(stack.top());
                 stack.pop();
             }
@@ -437,15 +485,18 @@ void AST::shuntingYard(const vector<Node*>& list) {
     }
 
     // final stack flush
-    while (!stack.empty()) {
-        if (stack.top()->text != "(" && stack.top()->text != ")") {
+    while (!stack.empty())
+    {
+        if (stack.top()->text != "(" && stack.top()->text != ")")
+        {
             output.push_back(stack.top());
         }
         stack.pop();
     }
 
     // add postfix result directly into AST
-    for (Node* curr : output) {
+    for (Node *curr : output)
+    {
         addElementToAbstractSyntaxTree(curr->label, curr->text, curr->line);
     }
 }
@@ -466,7 +517,10 @@ Node *AST::build(Node *cstRoot)
         IF,
         ELSE,
         WHILE,
-        FOR,
+        FOR1,
+        FOR2,
+        FOR3,
+        FOR_INSIDE,
         CALL,
         ASSIGNMENT
     };
@@ -530,9 +584,11 @@ Node *AST::build(Node *cstRoot)
             }
             else if (isForStart(current))
             {
-                addElementToAbstractSyntaxTree("FOR", "", current->line);
+                addElementToAbstractSyntaxTree("FOR EXPRESSION 1", "", current->line);
                 current = nextCstNode(current);
-                state = FOR;
+                current = nextCstNode(current);
+                // skip "for (" and get to the assignment
+                state = FOR1;
             }
             else if (isCallStart(current))
             {
@@ -630,13 +686,15 @@ Node *AST::build(Node *cstRoot)
             if (isSemicolon(current))
             {
                 state = START;
+                shuntingYard(infixTokens);
                 setNextLinkToChild();
+                infixTokens.clear();
             }
             else
             {
-                addElementToAbstractSyntaxTree(current->label, current->text, current->line);
+                infixTokens.push_back(current);
+                current = nextCstNode(current);
             }
-            current = nextCstNode(current);
         }
         else if (state == IF)
         { // inside if
@@ -668,11 +726,127 @@ Node *AST::build(Node *cstRoot)
                 current = nextCstNode(current);
             }
         }
-        else if (state == FOR)
+        else if (state == FOR1)
         { // inside for
-            // Will make latter
+            if (isSemicolon(current))
+            {
+                state = FOR2;
+
+                vector<Node *> leftSide;
+                vector<Node *> rightSide;
+                bool seenEquals = false;
+
+                for (Node *tok : infixTokens)
+                {
+                    if (tok->text == "=")
+                    {
+                        seenEquals = true;
+                    }
+                    else if (!seenEquals)
+                    {
+                        leftSide.push_back(tok);
+                    }
+                    else
+                    {
+                        rightSide.push_back(tok);
+                    }
+                }
+
+                for (Node *tok : leftSide)
+                {
+                    addElementToAbstractSyntaxTree(tok->label, tok->text, tok->line);
+                }
+
+                shuntingYard(rightSide);
+                addElementToAbstractSyntaxTree("ASSIGN", "=", current->line);
+
+                infixTokens.clear();
+                setNextLinkToChild();
+                addElementToAbstractSyntaxTree("FOR EXPRESSION 2", "", current->line);
+            }
+            else
+            {
+                infixTokens.push_back(current);
+            }
+
             current = nextCstNode(current);
-            state = START;
+        }
+        else if (state == FOR2)
+        {
+            if (isSemicolon(current))
+            {
+                state = FOR3;
+                shuntingYard(infixTokens);
+                setNextLinkToChild();
+                infixTokens.clear();
+                addElementToAbstractSyntaxTree("FOR EXPRESSION 3", "", current->line);
+                // skip ;
+                current = nextCstNode(current);
+            }
+            else
+            {
+                infixTokens.push_back(current);
+                current = nextCstNode(current);
+            }
+        }
+        else if (state == FOR3)
+        {
+            if (isRightParen(current))
+            {
+                state = START;
+
+                vector<Node *> leftSide;
+                vector<Node *> rightSide;
+                bool seenEquals = false;
+
+                for (Node *tok : infixTokens)
+                {
+                    if (tok->text == "=")
+                    {
+                        seenEquals = true;
+                    }
+                    else if (!seenEquals)
+                    {
+                        leftSide.push_back(tok);
+                    }
+                    else
+                    {
+                        rightSide.push_back(tok);
+                    }
+                }
+
+                for (Node *tok : leftSide)
+                {
+                    addElementToAbstractSyntaxTree(tok->label, tok->text, tok->line);
+                }
+
+                shuntingYard(rightSide);
+                addElementToAbstractSyntaxTree("ASSIGN ", "=", current->line);
+
+                infixTokens.clear();
+                setNextLinkToChild();
+            }
+            else
+            {
+                infixTokens.push_back(current);
+            }
+
+            current = nextCstNode(current);
+        }
+        else if (state == FOR_INSIDE)
+        {
+            if (isLeftBrace(current))
+            {
+                state = START;
+                shuntingYard(infixTokens);
+                setNextLinkToChild();
+                infixTokens.clear();
+            }
+            else
+            {
+                infixTokens.push_back(current);
+                current = nextCstNode(current);
+            }
         }
         else if (state == CALL)
         { // inside call
