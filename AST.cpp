@@ -395,6 +395,31 @@ void AST::shuntingYard(const vector<Node *> &list)
             }
             i--;
         }
+        else if (curr->label == "IDENTIFIER" && (i + 1 < list.size()) && (list[i + 1]->text == "["))
+        { // array index - add array name and entire index group as one unit
+            // assumes array index is not an expression / keeps it in infix (future change we need to make?)
+            output.push_back(curr);
+            i++;
+            output.push_back(list[i]);
+            int bracketDepth = 1;
+            i++;
+            while (i < list.size() && bracketDepth > 0)
+            {
+                output.push_back(list[i]);
+
+                if (list[i]->text == "[")
+                {
+                    bracketDepth++;
+                }
+                else if (list[i]->text == "]")
+                {
+                    bracketDepth--;
+                }
+
+                i++;
+            }
+            i--;
+        }
 
         // if single-quoted literal, treat whole thing like one operand group
         else if (curr->text == "'")
