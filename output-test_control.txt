@@ -1,0 +1,17 @@
+Found declaration
+Found declaration
+Found assignment
+Found while
+Found nested block
+Found if
+Found nested block
+Found printf
+End of block
+Found printf
+End of block
+Found if
+Found nested block
+Found printf
+End of block
+Found printf
+End of block

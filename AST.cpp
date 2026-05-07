@@ -202,8 +202,16 @@ void AST::printTreeLines(const Node *start, ostream &out) const
 
     while (cur != nullptr)
     {
-        string text = cur->text.empty() ? cur->label : cur->text;
-        out << text << "   ";
+        string displayText;
+
+        if (cur->label == "DECLARATION") {
+            displayText = cur->label;
+        }
+        else {
+            displayText = cur->text.empty() ? cur->label : cur->text;
+        }
+
+        out << displayText << "   ";
 
         if (cur->child != nullptr)
         {
@@ -539,8 +547,36 @@ Node *AST::build(Node *cstRoot)
         {
             if (isFunctionOrProcedureStart(current))
             {
-                addElementToAbstractSyntaxTree("DECLARATION", "", current->line);
+                string routineName = "";
+
+                if (current->text == "procedure")
+                {
+                    Node* nameNode = nextCstNode(current);
+
+                    if (nameNode != nullptr)
+                    {
+                        routineName = nameNode->text;
+                    }
+                }
+                else if (current->text == "function")
+                {
+                    Node* returnTypeNode = nextCstNode(current);
+                    Node* nameNode = nullptr;
+
+                    if (returnTypeNode != nullptr)
+                    {
+                        nameNode = nextCstNode(returnTypeNode);
+                    }
+
+                    if (nameNode != nullptr)
+                    {
+                        routineName = nameNode->text;
+                    }
+                }
+
+                addElementToAbstractSyntaxTree("DECLARATION", routineName, current->line);
                 setNextLinkToChild();
+
                 current = nextCstNode(current);
                 state = FUNC_PROC;
             }
@@ -821,7 +857,7 @@ Node *AST::build(Node *cstRoot)
                 }
 
                 shuntingYard(rightSide);
-                addElementToAbstractSyntaxTree("ASSIGN ", "=", current->line);
+                addElementToAbstractSyntaxTree("ASSIGN", "=", current->line);
 
                 infixTokens.clear();
                 setNextLinkToChild();

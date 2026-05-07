@@ -1,0 +1,25 @@
+Found declaration
+Found declaration
+Found declaration
+Found declaration
+Found assignment
+Found assignment
+Found assignment
+Found for
+Unknown node: FOR EXPRESSION 2
+Unknown node: FOR EXPRESSION 3
+Found nested block
+Found assignment
+Found if
+Found nested block
+Found assignment
+End of block
+Found assignment
+End of block
+Found assignment
+Found if
+Found nested block
+Found assignment
+End of block
+Found assignment
+End of block

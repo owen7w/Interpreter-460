@@ -11,6 +11,7 @@ namespace fs = std::filesystem;
 #include "Parser.h"
 #include "SymbolTable.h"
 #include "AST.h"
+#include "Interpreter.h"
 
 int main(int argc, const char** argv) {
     if (argc != 2) {
@@ -75,7 +76,16 @@ int main(int argc, const char** argv) {
         return 1;
     }
 
-    ast.printTree(out);
+    SymbolTableResult stResult = createSymbolTable(tree);
+    if (stResult.error) {
+        out << stResult.errorMessage << "\n";
+        return 1;
+    }
+
+    Interpreter interpreter(astRoot, stResult.head, out);
+    interpreter.run();
+
+    freeSymbolTable(stResult.head);
 
     return 0;
 }

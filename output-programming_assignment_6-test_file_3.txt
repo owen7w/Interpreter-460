@@ -1,0 +1,20 @@
+Found declaration
+Found assignment
+Found while
+Found nested block
+Found function/procedure call
+Found assignment
+Found if
+Found nested block
+Found printf
+End of block
+Found printf
+End of block
+Found function/procedure call
+Found assignment
+Found if
+Found nested block
+Found printf
+End of block
+Found printf
+End of block

@@ -1,0 +1,14 @@
+Found declaration
+Found declaration
+Found declaration
+Found declaration
+Found assignment
+Found assignment
+Found assignment
+Found assignment
+Found if
+Found nested block
+Found assignment
+End of block
+Found assignment
+End of block
