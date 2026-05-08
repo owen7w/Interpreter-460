@@ -1,6 +1,1 @@
-Found declaration
-Found declaration
-Found assignment
-Found assignment
-Found printf
-End of block
+sum of the squares of the first 100 numbers = 338350

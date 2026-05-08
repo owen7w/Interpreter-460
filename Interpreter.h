@@ -9,25 +9,6 @@
 
 using namespace std;
 
-// Holds a value while the program is running.
-struct RuntimeValue {
-    string datatype; // "int", "char", "bool"
-
-    int intValue;
-    char charValue;
-    bool boolValue;
-    string stringValue;
-
-    RuntimeValue()
-        : datatype(""),
-          intValue(0),
-          charValue('\0'),
-          boolValue(false),
-          stringValue("")
-    {
-    }
-};
-
 class Interpreter {
 private:
     Node* astRoot;
@@ -36,7 +17,7 @@ private:
 
     int currentScope;
     bool isReturning;
-    RuntimeValue lastReturnValue;
+    int lastReturnValue;
 
     // Finds the main procedure in the AST.
     Node* findMainProcedure();
@@ -68,26 +49,44 @@ private:
     // Executes a return statement.
     void executeReturn(Node* returnNode);
 
-    // Evaluates a postfix expression using a stack.
-    RuntimeValue evaluateExpression(Node* exprNode);
+    // Evaluates a postfix integer expression using a stack.
+    int evaluateExpression(Node* exprNode);
 
     // Finds a function/procedure in the symbol table.
     SymbolNode* findFunctionSymbol(const string& name);
 
     // Executes a function/procedure call.
-    RuntimeValue executeFunction(const string& funcName, const vector<RuntimeValue>& args);
+    int executeFunction(const string& funcName, const vector<int>& args);
 
     // Finds a variable/function using the current scope.
     SymbolNode* lookupSymbol(const string& name);
 
-    // Reads a symbol table value into a RuntimeValue.
-    RuntimeValue getSymbolValue(SymbolNode* symbol);
+    // Reads an int value from a symbol.
+    int getSymbolIntValue(SymbolNode* symbol);
 
-    // Reads a variable by name.
-    RuntimeValue getVariableValue(const string& name);
+    // Reads an int variable by name.
+    int getVariableIntValue(const string& name);
 
-    // Stores a RuntimeValue into a symbol table entry.
-    void assignValue(SymbolNode* symbol, int index, const RuntimeValue& value);
+    // Stores an int value into a symbol table entry.
+    void assignIntValue(SymbolNode* symbol, int index, int value);
+
+
+        // Reads a char value from a symbol.
+    char getSymbolCharValue(SymbolNode* symbol);
+
+    // Reads a char variable by name.
+    char getVariableCharValue(const string& name);
+
+    // Stores a char value into a symbol table entry.
+    void assignCharValue(SymbolNode* symbol, int index, char value);
+
+    // Evaluates a char expression or char literal.
+    char evaluateCharExpression(Node* exprNode);
+
+
+    // Evaluates function/procedure call arguments.
+    vector<int> evaluateArgumentList(Node* openParenNode);
+
 
 public:
     Interpreter(Node* astRoot, SymbolNode* symbolTableHead, ostream& out);

@@ -1,4 +1,0 @@
-Found declaration
-Found assignment
-Found printf
-End of block

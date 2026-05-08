@@ -30,14 +30,12 @@ struct SymbolNode { // main thing that we will strung together to make symbol ta
 
     int intValue;
     char charValue;
-    bool boolValue;
-    string stringValue;
+    bool boolValue;;
     bool initialized;
 
     vector<int> intArrayValues;
     vector<char> charArrayValues;
     vector<bool> boolArrayValues;
-    vector<string> stringArrayValues;
     vector<bool> arrayInitialized;
     ParameterNode* parameterList;
     SymbolNode* next;
