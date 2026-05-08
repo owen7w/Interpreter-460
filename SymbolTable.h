@@ -6,7 +6,7 @@
 #include "Node.h"
 
 using namespace std;
-
+#include <vector>
 struct ParameterNode { // keeping paramenter separate from symbols for easier handling of parameter lists as we are printing also and where it tied to
     string name;
     string datatype;
@@ -28,6 +28,15 @@ struct SymbolNode { // main thing that we will strung together to make symbol ta
     int scope;
     int lineDeclared;
 
+    int intValue;
+    char charValue;
+    bool boolValue;;
+    bool initialized;
+
+    vector<int> intArrayValues;
+    vector<char> charArrayValues;
+    vector<bool> boolArrayValues;
+    vector<bool> arrayInitialized;
     ParameterNode* parameterList;
     SymbolNode* next;
 
@@ -44,5 +53,22 @@ struct SymbolTableResult { // struct to hold the result of symbol table creation
 SymbolTableResult createSymbolTable(Node* concreteSyntaxTree);
 void printSymbolTable(SymbolNode* head, ostream& out);
 void freeSymbolTable(SymbolNode* head);
+SymbolNode* findSymbol(SymbolNode* head, const string& name, int scope);
+
+
+
+void setIntValue(SymbolNode* symbol, int value);
+int getIntValue(SymbolNode* symbol);
+void setCharValue(SymbolNode* symbol, char value);
+char getCharValue(SymbolNode* symbol);
+void setBoolValue(SymbolNode* symbol, bool value);
+bool getBoolValue(SymbolNode* symbol);
+
+void setIntArrayValue(SymbolNode* symbol, int index, int value);
+int getIntArrayValue(SymbolNode* symbol, int index);
+void setCharArrayValue(SymbolNode* symbol, int index, char value);
+char getCharArrayValue(SymbolNode* symbol, int index);
+void setBoolArrayValue(SymbolNode* symbol, int index, bool value);
+bool getBoolArrayValue(SymbolNode* symbol, int index);
 
 #endif

@@ -1,4 +1,5 @@
 #include "SymbolTable.h"
+#include <stdexcept>
 
 static Node* advanceCST(Node* cur) {
     if (cur == nullptr) {
@@ -449,4 +450,135 @@ void freeSymbolTable(SymbolNode* head) {
         delete head;
         head = next;
     }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+SymbolNode* findSymbol(SymbolNode* head, const string& name, int scope) {
+    // look in the current local scope
+    for (SymbolNode* cur = head; cur != nullptr; cur = cur->next) {
+        if (cur->name == name && cur->scope == scope) {
+            return cur;
+        }
+    }
+    // look globally
+    for (SymbolNode* cur = head; cur != nullptr; cur = cur->next) {
+        if (cur->name == name && cur->scope == 0) {
+            return cur;
+        }
+    }
+    
+    return nullptr;
+}
+
+
+
+
+void setIntValue(SymbolNode* symbol, int value) {
+    if (symbol != nullptr && symbol->datatype == "int" && !symbol->isArray) {
+        symbol->intValue = value;
+        symbol->initialized = true;
+    }
+}
+
+int getIntValue(SymbolNode* symbol) {
+    if (symbol != nullptr && symbol->datatype == "int" && !symbol->isArray && symbol->initialized) {
+        return symbol->intValue;
+    }
+    throw runtime_error("Symbol is not an initialized int variable");
+}
+
+void setCharValue(SymbolNode* symbol, char value) {
+    if (symbol != nullptr && symbol->datatype == "char" && !symbol->isArray) {
+        symbol->charValue = value;
+        symbol->initialized = true;
+    }
+}
+
+char getCharValue(SymbolNode* symbol) {
+    if (symbol != nullptr && symbol->datatype == "char" && !symbol->isArray && symbol->initialized) {
+        return symbol->charValue;
+    }
+    throw runtime_error("Symbol is not an initialized char variable");
+}
+
+
+void setIntArrayValue(SymbolNode* symbol, int index, int value) {
+    if (symbol != nullptr && symbol->datatype == "int" && symbol->isArray && index >= 0 && index < symbol->arraySize) {
+        if (index >= symbol->intArrayValues.size()) {
+            symbol->intArrayValues.resize(index + 1);
+            symbol->arrayInitialized.resize(index + 1, false);
+        }
+        symbol->intArrayValues[index] = value;
+        symbol->arrayInitialized[index] = true;
+    }
+}
+
+
+int getIntArrayValue(SymbolNode* symbol, int index) {
+    if (symbol != nullptr && symbol->datatype == "int" && symbol->isArray && index >= 0 && index < symbol->arraySize && index < symbol->intArrayValues.size() && symbol->arrayInitialized[index]) {
+        return symbol->intArrayValues[index];
+    }
+    throw runtime_error("Symbol is not an initialized int array variable at the given index");
+}
+
+void setCharArrayValue(SymbolNode* symbol, int index, char value) {
+    if (symbol != nullptr && symbol->datatype == "char" && symbol->isArray && index >= 0 && index < symbol->arraySize) {
+        if (index >= symbol->charArrayValues.size()) {
+            symbol->charArrayValues.resize(index + 1);
+            symbol->arrayInitialized.resize(index + 1, false);
+        }
+        symbol->charArrayValues[index] = value;
+        symbol->arrayInitialized[index] = true;
+    }
+}
+
+char getCharArrayValue(SymbolNode* symbol, int index) {
+    if (symbol != nullptr && symbol->datatype == "char" && symbol->isArray && index >= 0 && index < symbol->arraySize && index < symbol->charArrayValues.size() && symbol->arrayInitialized[index]) {
+        return symbol->charArrayValues[index];
+    }
+    throw runtime_error("Symbol is not an initialized char array variable at the given index");
+}
+
+
+void setBoolValue(SymbolNode* symbol, bool value) {
+    if (symbol != nullptr && symbol->datatype == "bool" && !symbol->isArray) {
+        symbol->boolValue = value;
+        symbol->initialized = true;
+    }
+}
+
+bool getBoolValue(SymbolNode* symbol) {
+    if (symbol != nullptr && symbol->datatype == "bool" && !symbol->isArray && symbol->initialized) {
+        return symbol->boolValue;
+    }
+    throw runtime_error("Symbol is not an initialized bool variable");
+}
+
+void setBoolArrayValue(SymbolNode* symbol, int index, bool value) {
+    if (symbol != nullptr && symbol->datatype == "bool" && symbol->isArray && index >= 0 && index < symbol->arraySize) {
+        if (index >= symbol->boolArrayValues.size()) {
+            symbol->boolArrayValues.resize(index + 1);
+            symbol->arrayInitialized.resize(index + 1, false);
+        }
+        symbol->boolArrayValues[index] = value;
+        symbol->arrayInitialized[index] = true;
+    }
+}
+
+bool getBoolArrayValue(SymbolNode* symbol, int index) {
+    if (symbol != nullptr && symbol->datatype == "bool" && symbol->isArray && index >= 0 && index < symbol->arraySize && index < symbol->boolArrayValues.size() && symbol->arrayInitialized[index]) {
+        return symbol->boolArrayValues[index];
+    }
+    throw runtime_error("Symbol is not an initialized bool array variable at the given index");
 }
