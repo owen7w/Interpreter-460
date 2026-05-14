@@ -19,7 +19,7 @@ private:
     int currentScope;
     bool isReturning;
     int lastReturnValue;
-    bool log = true; // used for debugging, prints what execution calls are done
+    bool log = false; // used for debugging, prints what execution calls are done
 
     // Finds the main procedure in the AST.
     Node *findMainProcedure();
