@@ -1076,6 +1076,7 @@ void Interpreter::executeWhile(Node *whileNode)
     while (!isReturning && evaluateExpression(whileNode->sibling))
     {
         executeBlock(bodyBlock);
+    }
 }
 
 void Interpreter::executeFor(Node *forNode)
@@ -1105,6 +1106,7 @@ void Interpreter::executeFor(Node *forNode)
         {
             executeAssignment(expr3);
         }
+    }
 }
 
 void Interpreter::executePrintf(Node *printfNode)
