@@ -23,7 +23,7 @@ enum class StatementKind
     OTHER
 };
 // static helper function to determine the kind of statement based on the AST node label
-static StatementKind getStatementKind(Node* node)
+static StatementKind getStatementKind(Node *node)
 {
     if (node == nullptr)
     {
@@ -73,8 +73,8 @@ static StatementKind getStatementKind(Node* node)
 
     return StatementKind::OTHER;
 }
-// helper function to decode escaped character literals 
-static char decodeCharLiteral(const string& text)
+// helper function to decode escaped character literals
+static char decodeCharLiteral(const string &text)
 {
     if (text == "\\n")
     {
@@ -91,7 +91,8 @@ static char decodeCharLiteral(const string& text)
     if (text.size() >= 2 && text[0] == '\\' && text[1] == 'x')
     {
         string hexStr = text.substr(2);
-        if (hexStr.empty()) return '\0';
+        if (hexStr.empty())
+            return '\0';
         return (char)stoi(hexStr, nullptr, 16);
     }
 
@@ -99,7 +100,8 @@ static char decodeCharLiteral(const string& text)
     {
         return '\0';
     }
-    if (text[0] == '\\' && text.size() >= 2) {
+    if (text[0] == '\\' && text.size() >= 2)
+    {
         return text[1];
     }
 
@@ -110,33 +112,33 @@ static char decodeCharLiteral(const string& text)
 // Constructor / Run
 // -------------------------
 // Initializes the interpreter with the AST root, symbol table head, and output stream.
-Interpreter::Interpreter(Node* astRoot, SymbolNode* symbolTableHead, ostream& out)
+Interpreter::Interpreter(Node *astRoot, SymbolNode *symbolTableHead, ostream &out)
     : astRoot(astRoot),
       symbolTableHead(symbolTableHead),
       out(out),
       currentScope(0),
       isReturning(false),
-      lastReturnValue(0) 
-      {
-      }
+      lastReturnValue(0)
+{
+}
 // Starts the interpretation process by finding the main procedure and executing its block.
 void Interpreter::run()
 {
-    Node* mainNode = findMainProcedure();
+    Node *mainNode = findMainProcedure();
 
     if (mainNode == nullptr)
     {
         throw runtime_error("main procedure not found");
     }
 
-    SymbolNode* mainSymbol = findFunctionSymbol("main");
+    SymbolNode *mainSymbol = findFunctionSymbol("main");
 
     if (mainSymbol != nullptr)
     {
         currentScope = mainSymbol->scope;
     }
 
-    Node* mainBlock = getNextLine(mainNode);
+    Node *mainBlock = getNextLine(mainNode);
 
     if (mainBlock == nullptr || mainBlock->label != "BEGIN BLOCK")
     {
@@ -150,9 +152,9 @@ void Interpreter::run()
 // AST Navigation
 // -------------------------
 // helper function to find the main procedure declaration in the AST
-Node* Interpreter::findMainProcedure()
+Node *Interpreter::findMainProcedure()
 {
-    Node* cur = astRoot;
+    Node *cur = astRoot;
 
     while (cur != nullptr)
     {
@@ -167,7 +169,7 @@ Node* Interpreter::findMainProcedure()
     return nullptr;
 }
 // helper function to get the next line in the AST
-Node* Interpreter::getNextLine(Node* current)
+Node *Interpreter::getNextLine(Node *current)
 {
     while (current != nullptr)
     {
@@ -184,13 +186,17 @@ Node* Interpreter::getNextLine(Node* current)
 // Block Execution
 // -------------------------
 // Main funtion to execute a block of statements. It iterates through the statements in the block and executes them based on their type.
-void Interpreter::executeBlock(Node* blockNode)
+void Interpreter::executeBlock(Node *blockNode)
 {
+    if (log)
+    {
+        printLog("Executing block: ", blockNode);
+    }
     if (blockNode == nullptr || blockNode->label != "BEGIN BLOCK")
     {
         return;
     }
-    Node* current = getNextLine(blockNode);
+    Node *current = getNextLine(blockNode);
     // Keep executing statements until the block ends or a return is hit.
     while (current != nullptr && !isReturning)
     {
@@ -198,139 +204,139 @@ void Interpreter::executeBlock(Node* blockNode)
 
         switch (kind)
         {
-            case StatementKind::ASSIGNMENT:
-                executeAssignment(current);
-                current = getNextLine(current);
-                break;
+        case StatementKind::ASSIGNMENT:
+            executeAssignment(current);
+            current = getNextLine(current);
+            break;
 
-            case StatementKind::PRINTF:
-                // Expected behavior is to evaluate the printf arguments and print them to the output stream. 
-                // For example, if the AST represents printf("x = %d\n", x); 
-                // then we would evaluate the string literal "x = %d\n" and the variable x, and then print the formatted string with x's value. 
-                executePrintf(current);
-                current = getNextLine(current);
-                break;
+        case StatementKind::PRINTF:
+            // Expected behavior is to evaluate the printf arguments and print them to the output stream.
+            // For example, if the AST represents printf("x = %d\n", x);
+            // then we would evaluate the string literal "x = %d\n" and the variable x, and then print the formatted string with x's value.
+            executePrintf(current);
+            current = getNextLine(current);
+            break;
 
-            case StatementKind::IF:
+        case StatementKind::IF:
+        {
+            // Expected behavior
+            // executeIf(current) should evaluate the condition.
+            // If true, it executes the if block.
+            // If false, it skips to the else block if one exists.
+
+            // feel free to change this if you want
+            // We need to find the then block and else block (if it exists) so we know where to jump after executing the if statement.
+            Node *thenBlock = getNextLine(current);
+            Node *afterIf = skipBlock(thenBlock);
+
+            if (afterIf != nullptr && afterIf->label == "ELSE")
             {
-                // Expected behavior
-                // executeIf(current) should evaluate the condition.
-                // If true, it executes the if block.
-                // If false, it skips to the else block if one exists.
-
-                // feel free to change this if you want
-                // We need to find the then block and else block (if it exists) so we know where to jump after executing the if statement.
-                Node* thenBlock = getNextLine(current);
-                Node* afterIf = skipBlock(thenBlock);
-
-                if (afterIf != nullptr && afterIf->label == "ELSE")
-                {
-                    Node* elseBlock = getNextLine(afterIf);
-                    afterIf = skipBlock(elseBlock);
-                }
-
-                executeIf(current);
-                current = afterIf;
-                break;
+                Node *elseBlock = getNextLine(afterIf);
+                afterIf = skipBlock(elseBlock);
             }
 
-            case StatementKind::WHILE:
-            {
-                // Expected behavior
-                // executeWhile(current) should repeatedly evaluate the condition.
-                // While the condition is true, it executes the loop body.
+            executeIf(current);
+            current = afterIf;
+            break;
+        }
 
-                // feel free to change this if you want
-                // find the while body block so we know where to jump back to after each iteration and where to jump after the loop is done.
-                Node* bodyBlock = getNextLine(current);
-                Node* afterWhile = skipBlock(bodyBlock);
-                // execute the while loop.
-                executeWhile(current);
-                // continue after while loop when condition is false
-                current = afterWhile;
-                break;
+        case StatementKind::WHILE:
+        {
+            // Expected behavior
+            // executeWhile(current) should repeatedly evaluate the condition.
+            // While the condition is true, it executes the loop body.
+
+            // feel free to change this if you want
+            // find the while body block so we know where to jump back to after each iteration and where to jump after the loop is done.
+            Node *bodyBlock = getNextLine(current);
+            Node *afterWhile = skipBlock(bodyBlock);
+            // execute the while loop.
+            executeWhile(current);
+            // continue after while loop when condition is false
+            current = afterWhile;
+            break;
+        }
+
+        case StatementKind::FOR:
+        {
+            // Expected behavior
+            // executeFor(current) should run
+            //   expression 1 once as initialization
+            //   expression 2 as the condition
+            //   expression 3 after every loop body execution
+
+            // feel free to change this if you want
+
+            // These find the statement after the whole for loop,
+            // so executeBlock knows where to continue once executeFor finishes.
+            Node *expr2 = getNextLine(current);
+            Node *expr3 = getNextLine(expr2);
+            Node *bodyBlock = getNextLine(expr3);
+            Node *afterFor = skipBlock(bodyBlock);
+
+            // execute the for loop.
+            executeFor(current);
+            // continue after for loop when condition is false
+            current = afterFor;
+            break;
+        }
+
+        case StatementKind::RETURN:
+            executeReturn(current);
+            current = getNextLine(current);
+            break;
+
+        case StatementKind::CALL:
+        {
+            Node *functionNameNode = current->sibling;
+
+            if (functionNameNode == nullptr)
+            {
+                throw runtime_error("Invalid function/procedure call");
             }
 
-            case StatementKind::FOR:
-            {
-                // Expected behavior
-                // executeFor(current) should run
-                //   expression 1 once as initialization
-                //   expression 2 as the condition
-                //   expression 3 after every loop body execution
+            Node *openParenNode = functionNameNode->sibling;
+            vector<int> args = evaluateArgumentList(openParenNode);
 
-                // feel free to change this if you want
+            executeFunction(functionNameNode->text, args);
 
-                // These find the statement after the whole for loop,
-                // so executeBlock knows where to continue once executeFor finishes.
-                Node* expr2 = getNextLine(current);
-                Node* expr3 = getNextLine(expr2);
-                Node* bodyBlock = getNextLine(expr3);
-                Node* afterFor = skipBlock(bodyBlock);
+            current = getNextLine(current);
+            break;
+        }
 
-                // execute the for loop.
-                executeFor(current);
-                // continue after for loop when condition is false  
-                current = afterFor;
-                break;
-            }
+        case StatementKind::BEGIN_BLOCK:
+        {
+            Node *afterBlock = skipBlock(current);
+            executeBlock(current);
+            current = afterBlock;
+            break;
+        }
 
-            case StatementKind::RETURN:
-                executeReturn(current);
-                current = getNextLine(current);
-                break;
+        case StatementKind::END_BLOCK:
+            return;
 
-            case StatementKind::CALL:
-            {
-                Node* functionNameNode = current->sibling;
+        case StatementKind::DECLARATION:
+            current = getNextLine(current);
+            break;
 
-                if (functionNameNode == nullptr)
-                {
-                    throw runtime_error("Invalid function/procedure call");
-                }
-
-                Node* openParenNode = functionNameNode->sibling;
-                vector<int> args = evaluateArgumentList(openParenNode);
-
-                executeFunction(functionNameNode->text, args);
-
-                current = getNextLine(current);
-                break;
-            }
-
-            case StatementKind::BEGIN_BLOCK:
-            {
-                Node* afterBlock = skipBlock(current);
-                executeBlock(current);
-                current = afterBlock;
-                break;
-            }
-
-            case StatementKind::END_BLOCK:
-                return;
-
-            case StatementKind::DECLARATION:
-                current = getNextLine(current);
-                break;
-
-            case StatementKind::OTHER:
-            default:
-                out << "Unknown node: " << current->label << endl;
-                current = getNextLine(current);
-                break;
+        case StatementKind::OTHER:
+        default:
+            out << "Unknown node: " << current->label << endl;
+            current = getNextLine(current);
+            break;
         }
     }
 }
 
-//skips over a block of statements and returns the node after the block. Used for if-else and loop statements.
-Node* Interpreter::skipBlock(Node* beginBlockNode)
+// skips over a block of statements and returns the node after the block. Used for if-else and loop statements.
+Node *Interpreter::skipBlock(Node *beginBlockNode)
 {
     if (beginBlockNode == nullptr || beginBlockNode->label != "BEGIN BLOCK")
     {
         return nullptr;
     }
     int depth = 1;
-    Node* current = getNextLine(beginBlockNode);
+    Node *current = getNextLine(beginBlockNode);
     while (current != nullptr)
     {
         if (current->label == "BEGIN BLOCK")
@@ -353,9 +359,9 @@ Node* Interpreter::skipBlock(Node* beginBlockNode)
 // Symbol Lookup
 // -------------------------
 // helper function to find a funtion or procedure symbol by name in the symbol table
-SymbolNode* Interpreter::findFunctionSymbol(const string& name)
+SymbolNode *Interpreter::findFunctionSymbol(const string &name)
 {
-    for (SymbolNode* cur = symbolTableHead; cur != nullptr; cur = cur->next)
+    for (SymbolNode *cur = symbolTableHead; cur != nullptr; cur = cur->next)
     {
         if (cur->name == name && (cur->identifierType == "function" || cur->identifierType == "procedure"))
         {
@@ -366,11 +372,10 @@ SymbolNode* Interpreter::findFunctionSymbol(const string& name)
     return nullptr;
 }
 
-
 // helper function to look up a symbol by name and current scope, throwing an error if not found
-SymbolNode* Interpreter::lookupSymbol(const string& name)
+SymbolNode *Interpreter::lookupSymbol(const string &name)
 {
-    SymbolNode* symbol = findSymbol(symbolTableHead, name, currentScope);
+    SymbolNode *symbol = findSymbol(symbolTableHead, name, currentScope);
 
     if (symbol == nullptr)
     {
@@ -383,32 +388,41 @@ SymbolNode* Interpreter::lookupSymbol(const string& name)
 // Integer Helpers
 // -------------------------
 // helper function to get the integer value of a symbol
-int Interpreter::getSymbolIntValue(SymbolNode* symbol)
+int Interpreter::getSymbolIntValue(SymbolNode *symbol)
 {
-    if (symbol == nullptr) {
+    if (symbol == nullptr)
+    {
         throw runtime_error("NULL symbol");
-    } else if (symbol->datatype != "int") {
+    }
+    else if (symbol->datatype != "int")
+    {
         throw runtime_error("Not an int: " + symbol->name);
     }
     return getIntValue(symbol);
 }
 // helper function to get the integer value of a variable by name
-int Interpreter::getVariableIntValue(const string& name)
+int Interpreter::getVariableIntValue(const string &name)
 {
-    SymbolNode* symbol = lookupSymbol(name);
+    SymbolNode *symbol = lookupSymbol(name);
     return getSymbolIntValue(symbol);
 }
 // helper function to assign an integer value to a symbol
-void Interpreter::assignIntValue(SymbolNode* symbol, int index, int value)
+void Interpreter::assignIntValue(SymbolNode *symbol, int index, int value)
 {
     if (symbol == nullptr)
     {
         throw runtime_error("NULL symbol");
-    } else if (symbol->datatype != "int"){
+    }
+    else if (symbol->datatype != "int")
+    {
         throw runtime_error("Not an int: " + symbol->name);
-    } else if (index >= 0) {
+    }
+    else if (index >= 0)
+    {
         setIntArrayValue(symbol, index, value);
-    } else {
+    }
+    else
+    {
         setIntValue(symbol, value);
     }
 }
@@ -417,38 +431,46 @@ void Interpreter::assignIntValue(SymbolNode* symbol, int index, int value)
 // Character Helpers
 // -------------------------
 // same ideas as integer helpers but for char type
-char Interpreter::getSymbolCharValue(SymbolNode* symbol)
+char Interpreter::getSymbolCharValue(SymbolNode *symbol)
 {
     if (symbol == nullptr)
     {
         throw runtime_error("NULL symbol");
-    } else if (symbol->datatype != "char"){
+    }
+    else if (symbol->datatype != "char")
+    {
         throw runtime_error("Not a char : " + symbol->name);
     }
     return getCharValue(symbol);
 }
 
-char Interpreter::getVariableCharValue(const string& name)
+char Interpreter::getVariableCharValue(const string &name)
 {
-    SymbolNode* symbol = lookupSymbol(name);
+    SymbolNode *symbol = lookupSymbol(name);
     return getSymbolCharValue(symbol);
 }
 
-void Interpreter::assignCharValue(SymbolNode* symbol, int index, char value)
+void Interpreter::assignCharValue(SymbolNode *symbol, int index, char value)
 {
-    if (symbol == nullptr) {
+    if (symbol == nullptr)
+    {
         throw runtime_error("Cannot assign to null symbol");
-    } else if (symbol->datatype != "char"){
+    }
+    else if (symbol->datatype != "char")
+    {
         throw runtime_error("Expected char variable: " + symbol->name);
-    } if (index >= 0) {
+    }
+    if (index >= 0)
+    {
         setCharArrayValue(symbol, index, value);
     }
-    else {
+    else
+    {
         setCharValue(symbol, value);
     }
 }
-// this is for test program 2 mainly 
-char Interpreter::evaluateCharExpression(Node* exprNode)
+// this is for test program 2 mainly
+char Interpreter::evaluateCharExpression(Node *exprNode)
 {
     // if it null or empty, throw an error since we can't evaluate it
     if (exprNode == nullptr)
@@ -468,11 +490,11 @@ char Interpreter::evaluateCharExpression(Node* exprNode)
     // If it's an identifier, look up its value. If it's an array, evaluate the index and get the character at that index.
     if (exprNode->label == "IDENTIFIER")
     {
-        SymbolNode* symbol = lookupSymbol(exprNode->text);
+        SymbolNode *symbol = lookupSymbol(exprNode->text);
 
         if (symbol->isArray)
         {
-            Node* bracket = exprNode->sibling;
+            Node *bracket = exprNode->sibling;
 
             int index = evaluateExpression(bracket->sibling);
             return getCharArrayValue(symbol, index);
@@ -484,9 +506,8 @@ char Interpreter::evaluateCharExpression(Node* exprNode)
     return static_cast<char>(evaluateExpression(exprNode));
 }
 
-
 // Returns true when evaluateExpression should stop reading expression nodes
-static bool isExpressionStop(Node* node)
+static bool isExpressionStop(Node *node)
 {
     if (node == nullptr)
     {
@@ -501,7 +522,7 @@ static bool isExpressionStop(Node* node)
            node->text == ",";
 }
 // helper function to check if a node represents an operator
-static bool isOperator(Node* node)
+static bool isOperator(Node *node)
 {
     if (node == nullptr)
     {
@@ -524,7 +545,7 @@ static bool isOperator(Node* node)
            node->text == "||";
 }
 // helper function to apply an operator to two integer operands and return the result
-static int applyOperator(const string& op, int left, int right)
+static int applyOperator(const string &op, int left, int right)
 {
     if (op == "+")
     {
@@ -586,14 +607,18 @@ static int applyOperator(const string& op, int left, int right)
 
 // Evaluates the postfix expression using a stack.
 // Chars are treated as Ascii values.
-int Interpreter::evaluateExpression(Node* exprNode)
+int Interpreter::evaluateExpression(Node *exprNode)
 {
+    if (log)
+    {
+        printLog("Evaluating expression: ", exprNode);
+    }
     stack<int> values;
-    Node* current = exprNode;
+    Node *current = exprNode;
     // Iterate through the expression nodes until we reach a stop node.
     while (current != nullptr && !isExpressionStop(current))
     {
-        // if it int treat it as an integer literal and push its value onto the stack. 
+        // if it int treat it as an integer literal and push its value onto the stack.
         if (current->label == "INTEGER")
         {
             values.push(stoi(current->text));
@@ -630,11 +655,11 @@ int Interpreter::evaluateExpression(Node* exprNode)
             else
             {
                 // variable or array access
-                SymbolNode* symbol = lookupSymbol(current->text);
+                SymbolNode *symbol = lookupSymbol(current->text);
                 // if it's an array access, evaluate the index and get the value at that index
                 if (current->sibling != nullptr && current->sibling->text == "[")
                 {
-                    Node* indexStart = current->sibling->sibling;
+                    Node *indexStart = current->sibling->sibling;
                     int index = evaluateExpression(indexStart);
 
                     if (symbol->datatype == "int")
@@ -718,20 +743,24 @@ int Interpreter::evaluateExpression(Node* exprNode)
 // -------------------------
 // Executes assignment statements for int variables, char variables,
 // array elements, and string assignment into char arrays.
-void Interpreter::executeAssignment(Node* assignmentNode)
+void Interpreter::executeAssignment(Node *assignmentNode)
 {
+    if (log)
+    {
+        printLog("Executing assignment: ", assignmentNode);
+    }
     // The target of the assignment is the first sibling of the ASSIGNMENT node.
-    Node* target = assignmentNode->sibling;
+    Node *target = assignmentNode->sibling;
 
     if (target == nullptr)
     {
         throw runtime_error("Invalid assignment");
     }
     // Look up the symbol for the target variable.
-    SymbolNode* symbol = lookupSymbol(target->text);
+    SymbolNode *symbol = lookupSymbol(target->text);
     // Check if the assignment is to an array element by looking for a "[" sibling. If so, evaluate the index expression.
     int index = -1;
-    Node* exprStart = target->sibling;
+    Node *exprStart = target->sibling;
 
     if (exprStart != nullptr && exprStart->text == "[")
     {
@@ -747,7 +776,7 @@ void Interpreter::executeAssignment(Node* assignmentNode)
             exprStart = exprStart->sibling;
         }
     }
-    //handle ints
+    // handle ints
     if (symbol->datatype == "int")
     {
         int value = evaluateExpression(exprStart);
@@ -756,11 +785,11 @@ void Interpreter::executeAssignment(Node* assignmentNode)
     // handles char assignment
     else if (symbol->datatype == "char")
     {
-        // If it's a char array and it a whole string 
+        // If it's a char array and it a whole string
         if (symbol->isArray && index == -1)
         {
             int arrayIndex = 0;
-            Node* cur = exprStart;
+            Node *cur = exprStart;
             while (cur != nullptr && !isExpressionStop(cur))
             {
                 if (cur->label == "STRING")
@@ -771,28 +800,50 @@ void Interpreter::executeAssignment(Node* assignmentNode)
                         if (text[i] == '\\' && i + 1 < text.length())
                         {
                             char c;
-                            if (text[i+1] == 'n') { c = '\n'; i++; }
-                            else if (text[i+1] == 't') { c = '\t'; i++; }
-                            else if (text[i+1] == '0') { c = '\0'; i++; }
-                            else if (text[i+1] == 'x' && i + 2 < text.length()) {
+                            if (text[i + 1] == 'n')
+                            {
+                                c = '\n';
+                                i++;
+                            }
+                            else if (text[i + 1] == 't')
+                            {
+                                c = '\t';
+                                i++;
+                            }
+                            else if (text[i + 1] == '0')
+                            {
+                                c = '\0';
+                                i++;
+                            }
+                            else if (text[i + 1] == 'x' && i + 2 < text.length())
+                            {
                                 string hexStr = "";
                                 i += 2; // skip \x
-                                auto isHex = [](char ch) {
+                                auto isHex = [](char ch)
+                                {
                                     return (ch >= '0' && ch <= '9') ||
                                            (ch >= 'A' && ch <= 'F') ||
                                            (ch >= 'a' && ch <= 'f');
                                 };
-                                if (i < text.length() && isHex(text[i])) {
+                                if (i < text.length() && isHex(text[i]))
+                                {
                                     hexStr += text[i];
-                                    if (i + 1 < text.length() && isHex(text[i+1])) {
-                                        hexStr += text[i+1];
+                                    if (i + 1 < text.length() && isHex(text[i + 1]))
+                                    {
+                                        hexStr += text[i + 1];
                                         i++;
                                     }
                                 }
-                                if (!hexStr.empty()) c = (char)stoi(hexStr, nullptr, 16);
-                                else c = '\0';
+                                if (!hexStr.empty())
+                                    c = (char)stoi(hexStr, nullptr, 16);
+                                else
+                                    c = '\0';
                             }
-                            else { c = text[i+1]; i++; }
+                            else
+                            {
+                                c = text[i + 1];
+                                i++;
+                            }
 
                             if (arrayIndex < symbol->arraySize)
                                 assignCharValue(symbol, arrayIndex++, c);
@@ -818,7 +869,7 @@ void Interpreter::executeAssignment(Node* assignmentNode)
             }
         }
         // Handles a standalone escaped character node.
-        else 
+        else
         {
             // normal char assignment, evaluate the char expression and assign the resulting char value to the variable or array element.
             char value = evaluateCharExpression(exprStart);
@@ -831,11 +882,14 @@ void Interpreter::executeAssignment(Node* assignmentNode)
     }
 }
 
-
 // Executes a return statement inside a function.
 // It stores the return value and tells executeBlock() to stop running the function body.
-void Interpreter::executeReturn(Node* returnNode)
+void Interpreter::executeReturn(Node *returnNode)
 {
+    if (log)
+    {
+        printLog("Executing return: ", returnNode);
+    }
     if (returnNode == nullptr)
     {
         return;
@@ -847,15 +901,19 @@ void Interpreter::executeReturn(Node* returnNode)
 // Evaluates the arguments passed into a function call.
 // This returns a vector containing the evaluated argument values.
 // have not added arrays
-vector<int> Interpreter::evaluateArgumentList(Node* openParenNode)
+vector<int> Interpreter::evaluateArgumentList(Node *openParenNode)
 {
+    if (log)
+    {
+        printLog("Evaluating argument list: ", openParenNode);
+    }
     vector<int> args;
     if (openParenNode == nullptr || openParenNode->text != "(")
     {
         return args;
     }
 
-    Node* current = openParenNode->sibling;
+    Node *current = openParenNode->sibling;
     // Iterate through the argument nodes until we reach the closing parenthesis, evaluating each argument expression and adding it to the args vector.
     while (current != nullptr && current->text != ")")
     {
@@ -876,17 +934,30 @@ vector<int> Interpreter::evaluateArgumentList(Node* openParenNode)
 // Executes a function or procedure call.
 // It switches into the function's scope, assigns arguments to parameters,
 // runs the function body, then restores the old scope.
-int Interpreter::executeFunction(const string& funcName, const vector<int>& args)
+int Interpreter::executeFunction(const string &funcName, const vector<int> &args)
 {
+    if (log)
+    {
+        // printLog("Executing function: ", exprNode);
+        cout << "Executing function: " << endl;
+        cout << "\t" << funcName << endl;
+        cout << "\tArgs: ";
+        for (const auto &arg : args)
+        {
+            cout << arg << " ";
+        }
+        cout << endl;
+        cout << endl;
+    }
     // Look up the function/procedure symbol in the symbol table to get its scope and parameter information.
-    SymbolNode* functionSymbol = findFunctionSymbol(funcName);
+    SymbolNode *functionSymbol = findFunctionSymbol(funcName);
 
     if (functionSymbol == nullptr)
     {
         throw runtime_error("Undefined function/procedure: " + funcName);
     }
     // Find the function/procedure declaration node in the AST by matching the name. This is needed to get the body block of the function.
-    Node* functionNode = astRoot;
+    Node *functionNode = astRoot;
     while (functionNode != nullptr)
     {
         if (functionNode->label == "DECLARATION" && functionNode->text == funcName)
@@ -910,11 +981,11 @@ int Interpreter::executeFunction(const string& funcName, const vector<int>& args
     lastReturnValue = -1;
     // Assign the argument values to the function's parameters in the new scope.
     // We iterate through the parameter list and assign each argument value to the corresponding parameter variable.
-    ParameterNode* param = functionSymbol->parameterList;
+    ParameterNode *param = functionSymbol->parameterList;
     size_t argIndex = 0;
     while (param != nullptr && argIndex < args.size())
     {
-        SymbolNode* paramSymbol = findSymbol(symbolTableHead, param->name, currentScope);
+        SymbolNode *paramSymbol = findSymbol(symbolTableHead, param->name, currentScope);
 
         if (paramSymbol == nullptr)
         {
@@ -938,7 +1009,7 @@ int Interpreter::executeFunction(const string& funcName, const vector<int>& args
     }
 
     // Now we execute the function body block. We find the BEGIN BLOCK node that represents the function body and call executeBlock() to run it.
-    Node* bodyBlock = getNextLine(functionNode);
+    Node *bodyBlock = getNextLine(functionNode);
     executeBlock(bodyBlock);
 
     int result = lastReturnValue;
@@ -950,11 +1021,13 @@ int Interpreter::executeFunction(const string& funcName, const vector<int>& args
     return result;
 }
 
-
-
-
 void Interpreter::executeIf(Node *ifNode)
 {
+    if (log)
+    {
+        printLog("Executing if: ", ifNode);
+    }
+    // The start of the if conditional expression is the first sibling of the IF node.
     Node *exprStart = ifNode->sibling;
 
     if (exprStart == nullptr)
@@ -986,9 +1059,13 @@ void Interpreter::executeIf(Node *ifNode)
     }
 }
 
-
-void Interpreter::executeWhile(Node* whileNode)
+void Interpreter::executeWhile(Node *whileNode)
 {
+    if (log)
+    {
+        printLog("Executing while: ", whileNode);
+    }
+  
     if (whileNode == nullptr)
     {
         return;
@@ -999,12 +1076,15 @@ void Interpreter::executeWhile(Node* whileNode)
     while (!isReturning && evaluateExpression(whileNode->sibling))
     {
         executeBlock(bodyBlock);
-    }
 }
 
-
-void Interpreter::executeFor(Node* forNode)
+void Interpreter::executeFor(Node *forNode)
 {
+  if (log)
+    {
+        printLog("Executing for: ", forNode);
+    }
+  
     if (forNode == nullptr)
     {
         return;
@@ -1025,12 +1105,14 @@ void Interpreter::executeFor(Node* forNode)
         {
             executeAssignment(expr3);
         }
-    }
 }
 
-
-void Interpreter::executePrintf(Node* printfNode)
+void Interpreter::executePrintf(Node *printfNode)
 {
+    if (log)
+    {
+        printLog("Executing printf: ", printfNode);
+    }
     if (printfNode == nullptr) return;
     // The first sibling of the PRINTF node is the format string
     Node* current = printfNode->sibling;
@@ -1102,4 +1184,13 @@ void Interpreter::executePrintf(Node* printfNode)
             out << formatString[i];
         }
     }
+}
+
+void Interpreter::printLog(string action, Node *current)
+{
+    cout << action << endl;
+    cout << "Current Node - label: " << current->label << endl;
+    cout << "             - text: " << current->text << endl;
+    cout << "             - line: " << current->line << endl;
+    cout << endl;
 }
