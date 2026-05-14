@@ -500,7 +500,7 @@ char Interpreter::evaluateCharExpression(Node *exprNode)
             return getCharArrayValue(symbol, index);
         }
 
-        return getCharValue(symbol);
+        return getSymbolCharValue(symbol);
     }
     // if it a integer expression, evaluate it and convert to char
     return static_cast<char>(evaluateExpression(exprNode));
@@ -684,11 +684,11 @@ int Interpreter::evaluateExpression(Node *exprNode)
                 {
                     if (symbol->datatype == "int")
                     {
-                        values.push(getIntValue(symbol));
+                        values.push(getSymbolIntValue(symbol));
                     }
                     else if (symbol->datatype == "char")
                     {
-                        values.push(static_cast<int>(getCharValue(symbol)));
+                        values.push(static_cast<int>(getSymbolCharValue(symbol)));
                     }
                     else
                     {
@@ -1065,14 +1065,46 @@ void Interpreter::executeWhile(Node *whileNode)
     {
         printLog("Executing while: ", whileNode);
     }
+  
+    if (whileNode == nullptr)
+    {
+        return;
+    }
+
+    Node* bodyBlock = getNextLine(whileNode);
+
+    while (!isReturning && evaluateExpression(whileNode->sibling))
+    {
+        executeBlock(bodyBlock);
 }
 
 void Interpreter::executeFor(Node *forNode)
 {
-    if (log)
+  if (log)
     {
         printLog("Executing for: ", forNode);
     }
+  
+    if (forNode == nullptr)
+    {
+        return;
+    }
+
+    Node* expr1 = forNode;
+    Node* expr2 = getNextLine(expr1);
+    Node* expr3 = getNextLine(expr2);
+    Node* bodyBlock = getNextLine(expr3);
+
+    executeAssignment(expr1);
+
+    while (!isReturning && evaluateExpression(expr2->sibling))
+    {
+        executeBlock(bodyBlock);
+
+        if (!isReturning)
+        {
+            executeAssignment(expr3);
+        }
 }
 
 void Interpreter::executePrintf(Node *printfNode)
@@ -1080,6 +1112,77 @@ void Interpreter::executePrintf(Node *printfNode)
     if (log)
     {
         printLog("Executing printf: ", printfNode);
+    }
+    if (printfNode == nullptr) return;
+    // The first sibling of the PRINTF node is the format string
+    Node* current = printfNode->sibling;
+    string formatString = "";
+    // build the format string
+    while (current != nullptr && (current->label == "STRING" || current->label == "ESCAPED_CHARACTER"))
+    {
+        if (current->label == "ESCAPED_CHARACTER")
+        {
+            // if it's an escaped character, decode it and add the resulting character to the format string
+            formatString += decodeCharLiteral(current->text);
+        }
+        else
+        {
+            // if it's a string literal add its text to the format string
+            formatString += current->text;
+        }
+        current = current->sibling;
+    }
+    // Walk through each character of the format string
+    for (size_t i = 0; i < formatString.length(); i++)
+    {
+        // If we encounter a '%' character we check the next character to determine the type of the argument to print.
+        if (formatString[i] == '%' && i + 1 < formatString.length())
+        {
+            char type = formatString[i + 1];
+            if (type == 'd')
+            {
+                if (current != nullptr)
+                {
+                    if (current->label == "IDENTIFIER") {
+                        SymbolNode* sym = lookupSymbol(current->text);
+                        out << getIntValue(sym);
+                    } else if (current->label == "INTEGER") {
+                        out << stoi(current->text);
+                    }
+                    current = current->sibling;
+                }
+                i++;
+            }
+            else if (type == 's')
+            {
+                if (current != nullptr)
+                {
+                    if (current->label == "IDENTIFIER")
+                    {
+                        SymbolNode* sym = lookupSymbol(current->text);
+                        if (sym->datatype == "char" && sym->isArray)
+                        {
+                            for (int k = 0; k < sym->arraySize; k++)
+                            {
+                                char c = getCharArrayValue(sym, k);
+                                if (c == '\0') break;
+                                out << c;
+                            }
+                        }
+                    }
+                    current = current->sibling;
+                }
+                i++;
+            }
+            else
+            {
+                out << formatString[i];
+            }
+        }
+        else
+        {
+            out << formatString[i];
+        }
     }
 }
 
